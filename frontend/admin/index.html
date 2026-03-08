@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>法智云 - 管理后台</title>
+    <link rel="icon" type="image/png" href="/assets/images/favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans SC', sans-serif; background: #f1f5f9; }
+        
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 260px;
+            background: #1e293b;
+            color: white;
+            z-index: 100;
+        }
+        
+        .sidebar-logo {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-menu { padding: 16px 0; }
+        
+        .sidebar-menu-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 24px;
+            color: #94a3b8;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .sidebar-menu-item:hover, .sidebar-menu-item.active {
+            background: rgba(59, 130, 246, 0.2);
+            color: white;
+            border-right: 3px solid #3b82f6;
+        }
+        
+        .sidebar-menu-item i { width: 24px; margin-right: 12px; }
+        
+        .main-content { margin-left: 260px; min-height: 100vh; }
+        
+        .header {
+            background: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card {
+            padding: 24px;
+            border-radius: 12px;
+            color: white;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover { background: #2563eb; }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .table { width: 100%; border-collapse: collapse; }
+        
+        .table th, .table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #475569;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-success { background: #dcfce7; color: #16a34a; }
+        .badge-warning { background: #fef3c7; color: #d97706; }
+        .badge-danger { background: #fee2e2; color: #dc2626; }
+        .badge-info { background: #dbeafe; color: #2563eb; }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow: auto;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .pagination {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 24px;
+        }
+        
+        .pagination button {
+            padding: 8px 16px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .pagination button.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 登录页面 -->
+        <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800">
+            <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-xl bg-blue-600 flex items-center justify-center">
+                        <i class="fas fa-balance-scale text-white text-2xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold">法智云管理后台</h1>
+                    <p class="text-gray-500">请登录以继续</p>
+                </div>
+                <form @submit.prevent="login">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">账号</label>
+                        <input v-model="loginForm.account" type="text" class="form-input" placeholder="请输入账号">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">密码</label>
+                        <input v-model="loginForm.password" type="password" class="form-input" placeholder="请输入密码">
+                    </div>
+                    <button type="submit" class="btn-primary w-full" :disabled="isLoading">
+                        <span v-if="isLoading">登录中...</span>
+                        <span v-else>登录</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- 管理后台 -->
+        <template v-else>
+            <!-- 侧边栏 -->
+            <aside class="sidebar">
+                <div class="sidebar-logo">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
+                            <i class="fas fa-balance-scale text-white"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold">法智云</div>
+                            <div class="text-xs text-gray-400">管理后台</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <nav class="sidebar-menu">
+                    <div class="sidebar-menu-item" :class="{ active: currentPage === 'dashboard' }" @click="navigate('dashboard')">
+                        <i class="fas fa-chart-line"></i>
+                        <span>数据概览</span>
+                    </div>
+                    <div class="sidebar-menu-item" :class="{ active: currentPage === 'users' }" @click="navigate('users')">
+                        <i class="fas fa-users"></i>
+                        <span>用户管理</span>
+                    </div>
+                    <div class="sidebar-menu-item" :class="{ active: currentPage === 'contracts' }" @click="navigate('contracts')">
+                        <i class="fas fa-file-contract"></i>
+                        <span>合同审查</span>
+                    </div>
+                    <div class="sidebar-menu-item" :class="{ active: currentPage === 'consults' }" @click="navigate('consults')">
+                        <i class="fas fa-comments"></i>
+                        <span>法律咨询</span>
+                    </div>
+                    <div class="sidebar-menu-item" :class="{ active: currentPage === 'orders' }" @click="navigate('orders')">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>订单管理</span>
+                    </div>
+                    <div class="sidebar-menu-item" :class="{ active: currentPage === 'lawyers' }" @click="navigate('lawyers')">
+                        <i class="fas fa-user-tie"></i>
+                        <span>律师管理</span>
+                    </div>
+                    <div class="sidebar-menu-item" :class="{ active: currentPage === 'content' }" @click="navigate('content')">
+                        <i class="fas fa-edit"></i>
+                        <span>内容管理</span>
+                    </div>
+                    <div class="sidebar-menu-item" :class="{ active: currentPage === 'settings' }" @click="navigate('settings')">
+                        <i class="fas fa-cog"></i>
+                        <span>系统设置</span>
+                    </div>
+                </nav>
+                
+                <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                            <i class="fas fa-user text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium">{{ user.nickname }}</div>
+                            <div class="text-xs text-gray-400">管理员</div>
+                        </div>
+                        <button @click="logout" class="text-gray-400 hover:text-white">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+            
+            <!-- 主内容 -->
+            <main class="main-content">
+                <!-- 顶部导航 -->
+                <header class="header">
+                    <h2 class="text-xl font-bold">{{ pageTitle }}</h2>
+                    <div class="flex items-center gap-4">
+                        <button class="relative p-2 text-gray-600 hover:text-blue-600">
+                            <i class="fas fa-bell"></i>
+                            <span class="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
+                        </button>
+                    </div>
+                </header>
+                
+                <!-- 页面内容 -->
+                <div class="p-6">
+                    <!-- 数据概览 -->
+                    <div v-if="currentPage === 'dashboard'" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div class="stat-card bg-gradient-to-br from-blue-500 to-blue-600">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="text-blue-100 text-sm">今日新增用户</div>
+                                        <div class="text-3xl font-bold">{{ dashboard.today.users }}</div>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                                        <i class="fas fa-user-plus text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-card bg-gradient-to-br from-green-500 to-green-600">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="text-green-100 text-sm">今日订单</div>
+                                        <div class="text-3xl font-bold">{{ dashboard.today.orders }}</div>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                                        <i class="fas fa-shopping-cart text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-card bg-gradient-to-br from-purple-500 to-purple-600">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="text-purple-100 text-sm">今日收入</div>
+                                        <div class="text-3xl font-bold">¥{{ dashboard.today.revenue }}</div>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                                        <i class="fas fa-yen-sign text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-card bg-gradient-to-br from-orange-500 to-orange-600">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="text-orange-100 text-sm">待处理</div>
+                                        <div class="text-3xl font-bold">{{ dashboard.pending.contracts + dashboard.pending.consults + dashboard.pending.withdrawals }}</div>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                                        <i class="fas fa-clock text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid lg:grid-cols-2 gap-6">
+                            <div class="card p-6">
+                                <h3 class="font-bold text-lg mb-4">总数据统计</h3>
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                                        <span class="text-gray-600">总用户数</span>
+                                        <span class="text-2xl font-bold text-blue-600">{{ dashboard.total.users }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                                        <span class="text-gray-600">总订单数</span>
+                                        <span class="text-2xl font-bold text-green-600">{{ dashboard.total.orders }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                                        <span class="text-gray-600">总收入</span>
+                                        <span class="text-2xl font-bold text-purple-600">¥{{ dashboard.total.revenue }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card p-6">
+                                <h3 class="font-bold text-lg mb-4">待处理事项</h3>
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center p-4 bg-red-50 rounded-lg">
+                                        <span class="text-gray-600">待审查合同</span>
+                                        <span class="text-xl font-bold text-red-600">{{ dashboard.pending.contracts }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-4 bg-yellow-50 rounded-lg">
+                                        <span class="text-gray-600">待回复咨询</span>
+                                        <span class="text-xl font-bold text-yellow-600">{{ dashboard.pending.consults }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
+                                        <span class="text-gray-600">待审核提现</span>
+                                        <span class="text-xl font-bold text-blue-600">{{ dashboard.pending.withdrawals }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 用户管理 -->
+                    <div v-if="currentPage === 'users'" class="space-y-6">
+                        <div class="flex justify-between items-center">
+                            <div class="flex gap-4">
+                                <input v-model="userSearch" type="text" class="form-input w-64" placeholder="搜索用户...">
+                                <select v-model="userFilter" class="form-input w-32">
+                                    <option value="">全部类型</option>
+                                    <option value="1">个人用户</option>
+                                    <option value="2">企业用户</option>
+                                    <option value="3">律师</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="card overflow-hidden">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>用户</th>
+                                        <th>类型</th>
+                                        <th>状态</th>
+                                        <th>注册时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="user in users" :key="user.id">
+                                        <td>{{ user.id }}</td>
+                                        <td>
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                                    <span class="text-blue-600 font-bold">{{ user.nickname?.charAt(0) }}</span>
+                                                </div>
+                                                <div>
+                                                    <div class="font-medium">{{ user.nickname }}</div>
+                                                    <div class="text-sm text-gray-500">{{ user.email || user.phone }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>{{ getUserTypeText(user.user_type) }}</td>
+                                        <td>
+                                            <span :class="getStatusBadge(user.status)">{{ user.status === 1 ? '正常' : '禁用' }}</span>
+                                        </td>
+                                        <td>{{ user.created_at }}</td>
+                                        <td>
+                                            <button @click="viewUser(user)" class="text-blue-600 hover:underline mr-3">查看</button>
+                                            <button @click="toggleUserStatus(user)" :class="user.status === 1 ? 'text-red-600' : 'text-green-600'" class="hover:underline">
+                                                {{ user.status === 1 ? '禁用' : '启用' }}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="pagination">
+                            <button @click="changePage(-1)" :disabled="currentPageNum === 1">上一页</button>
+                            <button v-for="page in totalPages" :key="page" @click="goToPage(page)" :class="{ active: page === currentPageNum }">{{ page }}</button>
+                            <button @click="changePage(1)" :disabled="currentPageNum === totalPages">下一页</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 合同审查 -->
+                    <div v-if="currentPage === 'contracts'" class="space-y-6">
+                        <div class="card overflow-hidden">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>合同名称</th>
+                                        <th>用户</th>
+                                        <th>风险等级</th>
+                                        <th>状态</th>
+                                        <th>提交时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="contract in contracts" :key="contract.id">
+                                        <td>{{ contract.id }}</td>
+                                        <td>{{ contract.contract_name }}</td>
+                                        <td>{{ contract.user_name }}</td>
+                                        <td>
+                                            <span :class="getRiskBadge(contract.risk_level)">{{ getRiskText(contract.risk_level) }}</span>
+                                        </td>
+                                        <td>
+                                            <span :class="getReviewStatusBadge(contract.review_status)">{{ getReviewStatusText(contract.review_status) }}</span>
+                                        </td>
+                                        <td>{{ contract.created_at }}</td>
+                                        <td>
+                                            <button @click="viewContract(contract)" class="text-blue-600 hover:underline mr-3">查看</button>
+                                            <button v-if="contract.review_status === 0" @click="assignLawyer(contract)" class="text-green-600 hover:underline">分配律师</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- 法律咨询 -->
+                    <div v-if="currentPage === 'consults'" class="space-y-6">
+                        <div class="card overflow-hidden">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>标题</th>
+                                        <th>分类</th>
+                                        <th>用户</th>
+                                        <th>状态</th>
+                                        <th>提交时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="consult in consults" :key="consult.id">
+                                        <td>{{ consult.id }}</td>
+                                        <td>{{ consult.title }}</td>
+                                        <td>{{ consult.category }}</td>
+                                        <td>{{ consult.user_name }}</td>
+                                        <td>
+                                            <span :class="getConsultStatusBadge(consult.status)">{{ getConsultStatusText(consult.status) }}</span>
+                                        </td>
+                                        <td>{{ consult.created_at }}</td>
+                                        <td>
+                                            <button @click="replyConsult(consult)" class="text-blue-600 hover:underline">回复</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- 订单管理 -->
+                    <div v-if="currentPage === 'orders'" class="space-y-6">
+                        <div class="card overflow-hidden">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>订单号</th>
+                                        <th>用户</th>
+                                        <th>产品</th>
+                                        <th>金额</th>
+                                        <th>状态</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="order in orders" :key="order.id">
+                                        <td>{{ order.order_no }}</td>
+                                        <td>{{ order.user_name }}</td>
+                                        <td>{{ order.product_name }}</td>
+                                        <td>¥{{ order.amount }}</td>
+                                        <td>
+                                            <span :class="getOrderStatusBadge(order.payment_status)">{{ getOrderStatusText(order.payment_status) }}</span>
+                                        </td>
+                                        <td>{{ order.created_at }}</td>
+                                        <td>
+                                            <button v-if="order.payment_status === 1" @click="refundOrder(order)" class="text-red-600 hover:underline">退款</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- 其他页面提示 -->
+                    <div v-if="['lawyers', 'content', 'settings'].includes(currentPage)" class="card p-12 text-center">
+                        <i class="fas fa-tools text-6xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-bold text-gray-600">功能开发中</h3>
+                        <p class="text-gray-500 mt-2">该功能正在开发中，敬请期待</p>
+                    </div>
+                </div>
+            </main>
+        </template>
+        
+        <!-- 提示消息 -->
+        <div v-if="toast.show" class="fixed top-4 right-4 z-50">
+            <div :class="['px-6 py-4 rounded-xl shadow-lg text-white', toast.type === 'success' ? 'bg-green-500' : 'bg-red-500']">
+                {{ toast.message }}
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                isLoggedIn: false,
+                isLoading: false,
+                user: {},
+                currentPage: 'dashboard',
+                loginForm: { account: '', password: '' },
+                
+                // 数据概览
+                dashboard: {
+                    today: { users: 0, orders: 0, revenue: 0 },
+                    total: { users: 0, orders: 0, revenue: 0 },
+                    pending: { contracts: 0, consults: 0, withdrawals: 0 }
+                },
+                
+                // 用户管理
+                users: [],
+                userSearch: '',
+                userFilter: '',
+                currentPageNum: 1,
+                totalPages: 1,
+                
+                // 合同审查
+                contracts: [],
+                
+                // 法律咨询
+                consults: [],
+                
+                // 订单管理
+                orders: [],
+                
+                // 提示
+                toast: { show: false, type: 'success', message: '' }
+            },
+            
+            computed: {
+                pageTitle() {
+                    const titles = {
+                        dashboard: '数据概览',
+                        users: '用户管理',
+                        contracts: '合同审查',
+                        consults: '法律咨询',
+                        orders: '订单管理',
+                        lawyers: '律师管理',
+                        content: '内容管理',
+                        settings: '系统设置'
+                    };
+                    return titles[this.currentPage] || '管理后台';
+                }
+            },
+            
+            mounted() {
+                this.checkLoginStatus();
+            },
+            
+            methods: {
+                checkLoginStatus() {
+                    const token = localStorage.getItem('fzy_token');
+                    if (token) {
+                        $.ajax({
+                            url: '/api/index.php?module=auth&action=profile',
+                            method: 'GET',
+                            headers: { 'Authorization': 'Bearer ' + token },
+                            success: (res) => {
+                                if (res.code === 200 && res.data.userType === 4) {
+                                    this.isLoggedIn = true;
+                                    this.user = res.data;
+                                    this.loadDashboard();
+                                } else {
+                                    localStorage.removeItem('fzy_token');
+                                }
+                            },
+                            error: () => {
+                                localStorage.removeItem('fzy_token');
+                            }
+                        });
+                    }
+                },
+                
+                login() {
+                    if (!this.loginForm.account || !this.loginForm.password) {
+                        this.showToast('请填写完整信息', 'error');
+                        return;
+                    }
+                    
+                    this.isLoading = true;
+                    
+                    $.ajax({
+                        url: '/api/index.php?module=auth&action=login',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(this.loginForm),
+                        success: (res) => {
+                            this.isLoading = false;
+                            if (res.code === 200) {
+                                if (res.data.user.userType !== 4) {
+                                    this.showToast('您没有管理员权限', 'error');
+                                    return;
+                                }
+                                localStorage.setItem('fzy_token', res.data.token);
+                                this.isLoggedIn = true;
+                                this.user = res.data.user;
+                                this.loadDashboard();
+                            } else {
+                                this.showToast(res.message, 'error');
+                            }
+                        },
+                        error: () => {
+                            this.isLoading = false;
+                            this.showToast('登录失败', 'error');
+                        }
+                    });
+                },
+                
+                logout() {
+                    localStorage.removeItem('fzy_token');
+                    this.isLoggedIn = false;
+                    this.user = {};
+                },
+                
+                navigate(page) {
+                    this.currentPage = page;
+                    if (page === 'users') this.loadUsers();
+                    if (page === 'contracts') this.loadContracts();
+                    if (page === 'consults') this.loadConsults();
+                    if (page === 'orders') this.loadOrders();
+                },
+                
+                showToast(message, type = 'success') {
+                    this.toast = { show: true, type, message };
+                    setTimeout(() => this.toast.show = false, 3000);
+                },
+                
+                // 加载数据
+                loadDashboard() {
+                    const token = localStorage.getItem('fzy_token');
+                    $.ajax({
+                        url: '/api/index.php?module=admin&action=getDashboard',
+                        method: 'GET',
+                        headers: { 'Authorization': 'Bearer ' + token },
+                        success: (res) => {
+                            if (res.code === 200) {
+                                this.dashboard = res.data;
+                            }
+                        }
+                    });
+                },
+                
+                loadUsers() {
+                    const token = localStorage.getItem('fzy_token');
+                    $.ajax({
+                        url: '/api/index.php?module=admin&action=getUsers',
+                        method: 'GET',
+                        headers: { 'Authorization': 'Bearer ' + token },
+                        success: (res) => {
+                            if (res.code === 200) {
+                                this.users = res.data.list;
+                            }
+                        }
+                    });
+                },
+                
+                loadContracts() {
+                    const token = localStorage.getItem('fzy_token');
+                    $.ajax({
+                        url: '/api/index.php?module=admin&action=getContracts',
+                        method: 'GET',
+                        headers: { 'Authorization': 'Bearer ' + token },
+                        success: (res) => {
+                            if (res.code === 200) {
+                                this.contracts = res.data.list;
+                            }
+                        }
+                    });
+                },
+                
+                loadConsults() {
+                    const token = localStorage.getItem('fzy_token');
+                    $.ajax({
+                        url: '/api/index.php?module=admin&action=getConsults',
+                        method: 'GET',
+                        headers: { 'Authorization': 'Bearer ' + token },
+                        success: (res) => {
+                            if (res.code === 200) {
+                                this.consults = res.data.list;
+                            }
+                        }
+                    });
+                },
+                
+                loadOrders() {
+                    const token = localStorage.getItem('fzy_token');
+                    $.ajax({
+                        url: '/api/index.php?module=admin&action=getOrders',
+                        method: 'GET',
+                        headers: { 'Authorization': 'Bearer ' + token },
+                        success: (res) => {
+                            if (res.code === 200) {
+                                this.orders = res.data.list;
+                            }
+                        }
+                    });
+                },
+                
+                // 辅助方法
+                getUserTypeText(type) {
+                    const types = { 1: '个人', 2: '企业', 3: '律师', 4: '管理员' };
+                    return types[type] || '未知';
+                },
+                
+                getStatusBadge(status) {
+                    return status === 1 ? 'badge badge-success' : 'badge badge-danger';
+                },
+                
+                getRiskBadge(level) {
+                    const classes = { 1: 'badge badge-success', 2: 'badge badge-warning', 3: 'badge badge-danger' };
+                    return classes[level] || 'badge badge-info';
+                },
+                
+                getRiskText(level) {
+                    const texts = { 1: '低', 2: '中', 3: '高' };
+                    return texts[level] || '未知';
+                },
+                
+                getReviewStatusBadge(status) {
+                    const classes = {
+                        0: 'badge badge-warning',
+                        1: 'badge badge-info',
+                        2: 'badge badge-success',
+                        3: 'badge badge-danger'
+                    };
+                    return classes[status] || 'badge';
+                },
+                
+                getReviewStatusText(status) {
+                    const texts = { 0: '待审查', 1: '审查中', 2: '已完成', 3: '失败' };
+                    return texts[status] || '未知';
+                },
+                
+                getConsultStatusBadge(status) {
+                    const classes = {
+                        0: 'badge badge-warning',
+                        1: 'badge badge-info',
+                        2: 'badge badge-success',
+                        3: 'badge badge-danger'
+                    };
+                    return classes[status] || 'badge';
+                },
+                
+                getConsultStatusText(status) {
+                    const texts = { 0: '待回复', 1: '已回复', 2: '已解决', 3: '已关闭' };
+                    return texts[status] || '未知';
+                },
+                
+                getOrderStatusBadge(status) {
+                    const classes = {
+                        0: 'badge badge-warning',
+                        1: 'badge badge-success',
+                        2: 'badge badge-danger',
+                        3: 'badge badge-info'
+                    };
+                    return classes[status] || 'badge';
+                },
+                
+                getOrderStatusText(status) {
+                    const texts = { 0: '待支付', 1: '已支付', 2: '已取消', 3: '已退款' };
+                    return texts[status] || '未知';
+                },
+                
+                viewUser(user) {
+                    this.showToast('查看用户: ' + user.nickname);
+                },
+                
+                toggleUserStatus(user) {
+                    const token = localStorage.getItem('fzy_token');
+                    const newStatus = user.status === 1 ? 0 : 1;
+                    
+                    $.ajax({
+                        url: '/api/index.php?module=admin&action=disableUser',
+                        method: 'POST',
+                        headers: { 
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        },
+                        data: JSON.stringify({ id: user.id, status: newStatus }),
+                        success: (res) => {
+                            if (res.code === 200) {
+                                user.status = newStatus;
+                                this.showToast(res.message);
+                            }
+                        }
+                    });
+                },
+                
+                viewContract(contract) {
+                    this.showToast('查看合同: ' + contract.contract_name);
+                },
+                
+                assignLawyer(contract) {
+                    this.showToast('分配律师处理: ' + contract.contract_name);
+                },
+                
+                replyConsult(consult) {
+                    this.showToast('回复咨询: ' + consult.title);
+                },
+                
+                refundOrder(order) {
+                    this.showToast('退款订单: ' + order.order_no);
+                },
+                
+                changePage(delta) {
+                    this.currentPageNum += delta;
+                },
+                
+                goToPage(page) {
+                    this.currentPageNum = page;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

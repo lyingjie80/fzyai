@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: fzy_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./ssl:/etc/nginx/ssl
+      - ./frontend/user:/var/www/html/user
+      - ./frontend/admin:/var/www/html/admin
+      - ./backend/admin:/var/www/html/backend
+    depends_on:
+      - php
+      - mariadb
+    networks:
+      - fzy_network
+    restart: always
+
+  # PHP-FPM
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: fzy_php
+    volumes:
+      - ./backend/api:/var/www/api
+      - ./backend/admin:/var/www/admin
+      - ./docker/php/php.ini:/usr/local/etc/php/php.ini
+    depends_on:
+      - mariadb
+      - redis
+    networks:
+      - fzy_network
+    restart: always
+
+  # MariaDB 数据库
+  mariadb:
+    image: mariadb:10.11
+    container_name: fzy_mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: FzyAI@2024!Root
+      MYSQL_DATABASE: fazhiyun
+      MYSQL_USER: fzy_user
+      MYSQL_PASSWORD: FzyAI@2024!User
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - fzy_network
+    restart: always
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: fzy_redis
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - fzy_network
+    restart: always
+
+  # phpMyAdmin (可选，用于数据库管理)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: fzy_phpmyadmin
+    environment:
+      PMA_HOST: mariadb
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: FzyAI@2024!Root
+    ports:
+      - "8080:80"
+    depends_on:
+      - mariadb
+    networks:
+      - fzy_network
+    restart: always
+
+volumes:
+  mariadb_data:
+  redis_data:
+
+networks:
+  fzy_network:
+    driver: bridge
